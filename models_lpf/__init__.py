@@ -10,6 +10,6 @@ import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 
-from downsample import DownsampleGaussian as Downsample
-from downsample import Downsample1D
-from pad import get_pad_layer, get_pad_layer_1d
+from .downsample import DownsampleGaussian as Downsample
+from .downsample import Downsample1D
+from .pad import get_pad_layer, get_pad_layer_1d
