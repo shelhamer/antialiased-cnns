@@ -46,6 +46,41 @@ class Downsample(nn.Module):
             return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
 
 
+class DownsampleGaussian(nn.Module):
+    def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
+        super(Downsample, self).__init__()
+        self.filt_size = filt_size
+        self.pad_off = pad_off
+        self.pad_sizes = [int(1.*(filt_size-1)/2), int(np.ceil(1.*(filt_size-1)/2)), int(1.*(filt_size-1)/2), int(np.ceil(1.*(filt_size-1)/2))]
+        self.pad_sizes = [pad_size+pad_off for pad_size in self.pad_sizes]
+        self.stride = stride
+        self.off = int((self.stride-1)/2.)
+        self.channels = channels
+
+        breakpoint()
+        half_size = filt_size // 2
+        std_dev = half_size / 2.
+        variance = std_dev**2.
+        # calculate unnormalized density then normalize
+        x = torch.linspace(-half_size, half_size, steps=filt_size)
+        a = torch.exp(-x.view(-1, 1) ** 2 / (2 * variance ** 2)).t()
+
+        filt = torch.Tensor(a[:,None]*a[None,:])
+        filt = filt/torch.sum(filt)
+        self.register_buffer('filt', filt[None,None,:,:].repeat((self.channels,1,1,1)))
+
+        self.pad = get_pad_layer(pad_type)(self.pad_sizes)
+
+    def forward(self, inp):
+        if(self.filt_size==1):
+            if(self.pad_off==0):
+                return inp[:,:,::self.stride,::self.stride]
+            else:
+                return self.pad(inp)[:,:,::self.stride,::self.stride]
+        else:
+            return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
+
+
 class Downsample1D(nn.Module):
     def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
         super(Downsample1D, self).__init__()
