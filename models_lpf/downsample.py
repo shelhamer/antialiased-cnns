@@ -50,7 +50,9 @@ class Downsample(nn.Module):
             return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
 
 
+# TODO(shelhamer) try the discrete gaussian b.c. it's theoreticaly the right choice
 class DownsampleGaussian(nn.Module):
+    """Downsample with sampled Gaussian smoothing filter."""
     def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
         super().__init__()
         self.filt_size = filt_size
