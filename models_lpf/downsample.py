@@ -69,12 +69,12 @@ class DownsampleGaussian(nn.Module):
         x = torch.linspace(-half_size, half_size, steps=filt_size)
         if sampled:
             # calculate sampled gaussian from unnormalized density
-            a = torch.exp(-x.view(-1, 1) ** 2 / (2 * variance ** 2)).view(-1)
+            a = torch.exp(-x.view(-1, 1) ** 2 / (2 * variance)).view(-1)
         else:
             # calculate discrete gaussian from bessel function
             # as advised by Lindeberg '94
             from scipy.special import ive
-            a = ive(x.abs(), variance**2)
+            a = ive(x.abs(), variance)
 
         filt = torch.Tensor(a[:,None]*a[None,:])
         filt = filt/torch.sum(filt)
