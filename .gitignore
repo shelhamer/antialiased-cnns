@@ -2,3 +2,4 @@
 .python-version
 .vscode/
 weights/*.tar
+/experiments
