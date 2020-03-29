@@ -152,6 +152,7 @@ best_acc1 = 0
 def main():
     args = parser.parse_args()
 
+    print(args.out_dir)
     if(not os.path.exists(args.out_dir)):
         os.mkdir(args.out_dir)
 
@@ -215,7 +216,7 @@ def main_worker(gpu, ngpus_per_node, args):
         import models_lpf.resnet
         import models_lpf.densenet
         import models_lpf.mobilenet
-        
+
         if(args.arch=='alexnet_lpf'):
             model = models_lpf.alexnet.AlexNet(filter_size=args.filter_size)
 
@@ -611,7 +612,7 @@ def validate_diagonal(val_loader, model, args):
             probs = torch.nn.Softmax(dim=1)(model(inputs))
             corrs = probs.argmax(dim=1).cpu().data.numpy() == target.item()
             outputs = 100.*probs[:,target.item()]
-            
+
             acc1, acc5 = accuracy(probs, target.repeat(D), topk=(1, 5))
 
             probs[:,target.item()] = 0
