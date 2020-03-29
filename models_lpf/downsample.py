@@ -50,10 +50,10 @@ class Downsample(nn.Module):
             return F.conv2d(self.pad(inp), self.filt, stride=self.stride, groups=inp.shape[1])
 
 
-# TODO(shelhamer) try the discrete gaussian b.c. it's theoreticaly the right choice
 class DownsampleGaussian(nn.Module):
     """Downsample with sampled Gaussian smoothing filter."""
-    def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None, pad_off=0):
+    def __init__(self, pad_type='reflect', filt_size=3, stride=2, channels=None,
+                 pad_off=0, sampled=True):
         super().__init__()
         self.filt_size = filt_size
         self.pad_off = pad_off
@@ -66,9 +66,15 @@ class DownsampleGaussian(nn.Module):
         half_size = filt_size // 2
         std_dev = half_size / 2.
         variance = std_dev**2.
-        # calculate unnormalized density then normalize
         x = torch.linspace(-half_size, half_size, steps=filt_size)
-        a = torch.exp(-x.view(-1, 1) ** 2 / (2 * variance ** 2)).view(-1)
+        if sampled:
+            # calculate sampled gaussian from unnormalized density
+            a = torch.exp(-x.view(-1, 1) ** 2 / (2 * variance ** 2)).view(-1)
+        else:
+            # calculate discrete gaussian from bessel function
+            # as advised by Lindeberg '94
+            from scipy.special import ive
+            a = ive(x.abs(), variance**2)
 
         filt = torch.Tensor(a[:,None]*a[None,:])
         filt = filt/torch.sum(filt)
