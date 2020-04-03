@@ -66,7 +66,7 @@ def conv1x1(in_planes, out_planes, stride=1):
 class BasicBlock(nn.Module):
     expansion = 1
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, norm_layer=None, filter_size=1):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, norm_layer=None, filter_size=1, sampled=True):
         super(BasicBlock, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -79,7 +79,7 @@ class BasicBlock(nn.Module):
         if(stride==1):
             self.conv2 = conv3x3(planes,planes)
         else:
-            self.conv2 = nn.Sequential(Downsample(filt_size=filter_size, stride=stride, channels=planes),
+            self.conv2 = nn.Sequential(Downsample(filt_size=filter_size, stride=stride, channels=planes, sampled=sampled),
                 conv3x3(planes, planes),)
         self.bn2 = norm_layer(planes)
         self.downsample = downsample
@@ -107,7 +107,7 @@ class BasicBlock(nn.Module):
 class Bottleneck(nn.Module):
     expansion = 4
 
-    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, norm_layer=None, filter_size=1):
+    def __init__(self, inplanes, planes, stride=1, downsample=None, groups=1, norm_layer=None, filter_size=1, sampled=True):
         super(Bottleneck, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -119,7 +119,7 @@ class Bottleneck(nn.Module):
         if(stride==1):
             self.conv3 = conv1x1(planes, planes * self.expansion)
         else:
-            self.conv3 = nn.Sequential(Downsample(filt_size=filter_size, stride=stride, channels=planes),
+            self.conv3 = nn.Sequential(Downsample(filt_size=filter_size, stride=stride, channels=planes, sampled=sampled),
                 conv1x1(planes, planes * self.expansion))
         self.bn3 = norm_layer(planes * self.expansion)
         self.relu = nn.ReLU(inplace=True)
@@ -152,7 +152,7 @@ class Bottleneck(nn.Module):
 class ResNet(nn.Module):
 
     def __init__(self, block, layers, num_classes=1000, zero_init_residual=False,
-                 groups=1, width_per_group=64, norm_layer=None, filter_size=1, pool_only=True):
+                 groups=1, width_per_group=64, norm_layer=None, filter_size=1, pool_only=True, sampled=True):
         super(ResNet, self).__init__()
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
@@ -167,17 +167,17 @@ class ResNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
         if(pool_only):
-            self.maxpool = nn.Sequential(*[nn.MaxPool2d(kernel_size=2, stride=1), 
-                Downsample(filt_size=filter_size, stride=2, channels=planes[0])])
+            self.maxpool = nn.Sequential(*[nn.MaxPool2d(kernel_size=2, stride=1),
+                Downsample(filt_size=filter_size, stride=2, channels=planes[0], sampled=sampled)])
         else:
-            self.maxpool = nn.Sequential(*[Downsample(filt_size=filter_size, stride=2, channels=planes[0]), 
-                nn.MaxPool2d(kernel_size=2, stride=1), 
-                Downsample(filt_size=filter_size, stride=2, channels=planes[0])])
+            self.maxpool = nn.Sequential(*[Downsample(filt_size=filter_size, stride=2, channels=planes[0], sampled=sampled),
+                nn.MaxPool2d(kernel_size=2, stride=1),
+                Downsample(filt_size=filter_size, stride=2, channels=planes[0], sampled=sampled)])
 
         self.layer1 = self._make_layer(block, planes[0], layers[0], groups=groups, norm_layer=norm_layer)
-        self.layer2 = self._make_layer(block, planes[1], layers[1], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size)
-        self.layer3 = self._make_layer(block, planes[2], layers[2], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size)
-        self.layer4 = self._make_layer(block, planes[3], layers[3], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size)
+        self.layer2 = self._make_layer(block, planes[1], layers[1], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size, sampled=sampled)
+        self.layer3 = self._make_layer(block, planes[2], layers[2], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size, sampled=sampled)
+        self.layer4 = self._make_layer(block, planes[3], layers[3], stride=2, groups=groups, norm_layer=norm_layer, filter_size=filter_size, sampled=sampled)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
         self.fc = nn.Linear(planes[3] * block.expansion, num_classes)
 
@@ -202,7 +202,7 @@ class ResNet(nn.Module):
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
 
-    def _make_layer(self, block, planes, blocks, stride=1, groups=1, norm_layer=None, filter_size=1):
+    def _make_layer(self, block, planes, blocks, stride=1, groups=1, norm_layer=None, filter_size=1, sampled=True):
         if norm_layer is None:
             norm_layer = nn.BatchNorm2d
         downsample = None
@@ -212,17 +212,17 @@ class ResNet(nn.Module):
             #     norm_layer(planes * block.expansion),
             # )
 
-            downsample = [Downsample(filt_size=filter_size, stride=stride, channels=self.inplanes),] if(stride !=1) else []
+            downsample = [Downsample(filt_size=filter_size, stride=stride, channels=self.inplanes, sampled=sampled),] if(stride !=1) else []
             downsample += [conv1x1(self.inplanes, planes * block.expansion, 1),
                 norm_layer(planes * block.expansion)]
             # print(downsample)
             downsample = nn.Sequential(*downsample)
 
         layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, groups, norm_layer, filter_size=filter_size))
+        layers.append(block(self.inplanes, planes, stride, downsample, groups, norm_layer, filter_size=filter_size, sampled=sampled))
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
-            layers.append(block(self.inplanes, planes, groups=groups, norm_layer=norm_layer, filter_size=filter_size))
+            layers.append(block(self.inplanes, planes, groups=groups, norm_layer=norm_layer, filter_size=filter_size, sampled=sampled))
 
         return nn.Sequential(*layers)
 

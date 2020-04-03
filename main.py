@@ -128,6 +128,7 @@ parser.add_argument('--out-dir', dest='out_dir', default='./', type=str,
                     help='output directory')
 parser.add_argument('-f','--filter_size', default=1, type=int,
                     help='anti-aliasing filter size')
+parser.add_argument('--filter_type', choices=('sampled', 'discrete'), default='sampled')
 parser.add_argument('-es', '--evaluate-shift', dest='evaluate_shift', action='store_true',
                     help='evaluate model on shift-invariance')
 parser.add_argument('--epochs-shift', default=5, type=int, metavar='N',
@@ -239,15 +240,15 @@ def main_worker(gpu, ngpus_per_node, args):
             model = models_lpf.vgg.vgg19(filter_size=args.filter_size)
 
         elif(args.arch=='resnet18_lpf'):
-            model = models_lpf.resnet.resnet18(filter_size=args.filter_size)
+            model = models_lpf.resnet.resnet18(filter_size=args.filter_size, sampled=args.filter_type == 'sampled')
         elif(args.arch=='resnet34_lpf'):
-            model = models_lpf.resnet.resnet34(filter_size=args.filter_size)
+            model = models_lpf.resnet.resnet34(filter_size=args.filter_size, sampled=args.filter_type == 'sampled')
         elif(args.arch=='resnet50_lpf'):
-            model = models_lpf.resnet.resnet50(filter_size=args.filter_size)
+            model = models_lpf.resnet.resnet50(filter_size=args.filter_size, sampled=args.filter_type == 'sampled')
         elif(args.arch=='resnet101_lpf'):
-            model = models_lpf.resnet.resnet101(filter_size=args.filter_size)
+            model = models_lpf.resnet.resnet101(filter_size=args.filter_size, sampled=args.filter_type == 'sampled')
         elif(args.arch=='resnet152_lpf'):
-            model = models_lpf.resnet.resnet152(filter_size=args.filter_size)
+            model = models_lpf.resnet.resnet152(filter_size=args.filter_size, sampled=args.filter_type == 'sampled')
         elif(args.arch=='resnext50_32x4d_lpf'):
             model = models_lpf.resnet.resnext50_32x4d(filter_size=args.filter_size)
         elif(args.arch=='resnext101_32x8d_lpf'):
